@@ -60,6 +60,11 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
             assert LOG_SIG_MIN <= self.log_std <= LOG_SIG_MAX
 
     def get_action(self, obs_np, deterministic=False):
+        if isinstance(obs_np, dict):
+            obs_nps = [arr.flatten() for arr in obs_np.values()]
+            obs_np = np.concatenate(obs_nps, 0)
+        print(obs_np)
+
         actions = self.get_actions(obs_np[None], deterministic=deterministic)
         return actions[0, :], {}
 
@@ -79,6 +84,7 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
         :param return_log_prob: If True, return a sample and its log probability
         """
         h = obs
+        print(h)
         for i, fc in enumerate(self.fcs):
             h = self.hidden_activation(fc(h))
         mean = self.last_fc(h)
