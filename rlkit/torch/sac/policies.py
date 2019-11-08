@@ -30,6 +30,7 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
     If return_log_prob is False (default), log_prob = None
         This is done because computing the log_prob can be a bit expensive.
     """
+
     def __init__(
             self,
             hidden_sizes,
@@ -63,7 +64,6 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
         if isinstance(obs_np, dict):
             obs_nps = [arr.flatten() for arr in obs_np.values()]
             obs_np = np.concatenate(obs_nps, 0)
-        print(obs_np)
 
         actions = self.get_actions(obs_np[None], deterministic=deterministic)
         return actions[0, :], {}
@@ -84,7 +84,6 @@ class TanhGaussianPolicy(Mlp, ExplorationPolicy):
         :param return_log_prob: If True, return a sample and its log probability
         """
         h = obs
-        print(h)
         for i, fc in enumerate(self.fcs):
             h = self.hidden_activation(fc(h))
         mean = self.last_fc(h)

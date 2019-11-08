@@ -79,7 +79,8 @@ class MdpPathCollector(PathCollector):
 
     def get_snapshot(self):
         return dict(
-            env=self._env,
+            # TODO: make a flag? we can't pickle Gibson envs for some reason
+            # env=self._env,
             policy=self._policy,
         )
 

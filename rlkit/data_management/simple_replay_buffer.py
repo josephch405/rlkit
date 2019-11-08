@@ -17,7 +17,8 @@ class SimpleReplayBuffer(ReplayBuffer):
         self._observation_dim = observation_dim
         self._action_dim = action_dim
         self._max_replay_buffer_size = max_replay_buffer_size
-        self._observations = np.zeros((max_replay_buffer_size, observation_dim))
+        self._observations = np.zeros(
+            (max_replay_buffer_size, observation_dim))
         # It's a bit memory inefficient to save the observations twice,
         # but it makes the code *much* easier since you no longer have to
         # worry about termination conditions.
@@ -40,10 +41,21 @@ class SimpleReplayBuffer(ReplayBuffer):
 
     def add_sample(self, observation, action, reward, next_observation,
                    terminal, env_info, **kwargs):
+
+        # TODO: Refactor jointly with torch.sac.policies.get_action and below
+        if len(observation) > 0 and isinstance(observation[0], dict):
+            observations = [arr.flatten()
+                            for arr in observation[0].values()]
+            observation = np.concatenate(observations, 0)
         self._observations[self._top] = observation
         self._actions[self._top] = action
         self._rewards[self._top] = reward
         self._terminals[self._top] = terminal
+
+        if len(next_observation) > 0 and isinstance(next_observation[0], dict):
+            next_observations = [arr.flatten()
+                            for arr in next_observation[0].values()]
+            next_observation = np.concatenate(next_observations, 0)
         self._next_obs[self._top] = next_observation
 
         for key in self._env_info_keys:
