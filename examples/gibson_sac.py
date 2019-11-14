@@ -2,7 +2,6 @@ import os
 import argparse
 
 import gibson2
-from gibson2.envs.locomotor_env import NavigateEnv, NavigateRandomEnv, InteractiveNavigateEnv
 
 import rlkit.torch.pytorch_util as ptu
 from rlkit.data_management.env_replay_buffer import EnvReplayBuffer
@@ -13,7 +12,7 @@ from rlkit.torch.sac.policies import TanhGaussianPolicy, MakeDeterministic
 from rlkit.torch.sac.sac import SACTrainer
 from rlkit.torch.networks import FlattenMlp
 from rlkit.torch.torch_rl_algorithm import TorchBatchRLAlgorithm
-
+from rlkit.util.gibson import add_env_args, load_env, get_config_file
 
 def add_sac_args(parser):
     parser.add_argument(
@@ -34,85 +33,13 @@ def add_sac_args(parser):
     )
 
 
-def add_env_args(parser):
-    group = parser.add_argument_group("env")
-    group.add_argument(
-        "--env-type",
-        required=True,
-        help="env type: [gibson|toy]",
-        choices=["gibson", "toy"]
-    )
-    group.add_argument(
-        "--config-file",
-        required=True,
-        help="config yaml file for Gibson environment",
-    )
-    group.add_argument(
-        "--env-mode",
-        type=str,
-        default="headless",
-        help="environment mode for the simulator (default: headless)",
-    )
-    group.add_argument(
-        "--action-timestep",
-        type=float,
-        default=1.0 / 10.0,
-        help="action timestep for the simulator (default: 0.1)",
-    )
-    group.add_argument(
-        "--physics-timestep",
-        type=float,
-        default=1.0 / 40.0,
-        help="physics timestep for the simulator (default: 0.025)",
-    )
-    group.add_argument(
-        "--random-position",
-        action="store_true",
-        default=False,
-        help="whether to randomize initial and target position (default: False)",
-    )
-    group.add_argument(
-        "--random-height",
-        action="store_true",
-        default=False,
-        help="whether to randomize the height of target position (default: False)",
-    )
-
-
 # config_file
 # action_timestep
-
-def load_env(args, config_file, env_mode, device_idx):
-    if args.env_type == "gibson":
-        if args.random_position:
-            return NavigateRandomEnv(config_file=config_file,
-                                     mode=env_mode,
-                                     action_timestep=args.action_timestep,
-                                     physics_timestep=args.physics_timestep,
-                                     random_height=args.random_height,
-                                     automatic_reset=True,
-                                     device_idx=device_idx)
-        else:
-            return NavigateEnv(config_file=config_file,
-                               mode=env_mode,
-                               action_timestep=args.action_timestep,
-                               physics_timestep=args.physics_timestep,
-                               automatic_reset=True,
-                               device_idx=device_idx)
-    elif args.env_type == "interactive_gibson":
-        return InteractiveNavigateEnv(config_file=config_file,
-                                      mode=env_mode,
-                                      action_timestep=args.action_timestep,
-                                      physics_timestep=args.physics_timestep,
-                                      automatic_reset=True,
-                                      random_position=args.random_position,
-                                      device_idx=device_idx)
 
 
 def experiment(variant, args):
 
-    config_file = os.path.join(os.path.dirname(
-        gibson2.__file__), "../examples/configs", args.config_file)
+    config_file = get_config_file(args.config_file)
 
     expl_env = NormalizedBoxEnv(
         load_env(args, config_file, args.env_mode, ptu.device.index))
@@ -221,6 +148,6 @@ if __name__ == "__main__":
             use_automatic_entropy_tuning=True,
         ),
     )
-    setup_logger(args.exp_name, variant=variant)
+    setup_logger(args.exp_name, variant=variant, snapshot_mode="gap", snapshot_gap=10)
     ptu.set_gpu_mode(True)  # optionally set the GPU (default=False)
     experiment(variant, args)
